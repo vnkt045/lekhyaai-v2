@@ -1,0 +1,333 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MULTI-TENANCY & AUTHENTICATION
+// ============================================
+
+model Tenant {
+  id            String   @id @default(cuid())
+  companyName   String
+  gstin         String   @unique
+  pan           String
+  state         String
+  address       String   @db.Text
+  email         String
+  phone         String
+  financialYear String   // e.g., "2024-25"
+  turnover      String   // e.g., "Below 40 Lakhs", "40L-1.5Cr", "Above 1.5Cr"
+  gstRegType    String   // Regular, Composition, Unregistered
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  users         User[]
+  ledgers       Ledger[]
+  groups        Group[]
+  vouchers      Voucher[]
+  invoices      Invoice[]
+  purchaseBills PurchaseBill[]
+  hsnCodes      HSNCode[]
+  gstReturns    GSTReturn[]
+  
+  @@map("tenants")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  role          String   @default("user") // admin, accountant, user
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@map("users")
+}
+
+// ============================================
+// ACCOUNTING CORE - DOUBLE ENTRY
+// ============================================
+
+model Group {
+  id            String   @id @default(cuid())
+  name          String
+  parentId      String?
+  parent        Group?   @relation("GroupHierarchy", fields: [parentId], references: [id])
+  children      Group[]  @relation("GroupHierarchy")
+  nature        String   // Asset, Liability, Income, Expense
+  affectsGross  Boolean  @default(false)
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  ledgers       Ledger[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([tenantId, name])
+  @@map("groups")
+}
+
+model Ledger {
+  id            String   @id @default(cuid())
+  name          String
+  alias         String?
+  
+  groupId       String
+  group         Group    @relation(fields: [groupId], references: [id])
+  
+  openingBalance Decimal @default(0) @db.Decimal(15, 2)
+  currentBalance Decimal @default(0) @db.Decimal(15, 2)
+  
+  // GST specific fields
+  gstin         String?
+  pan           String?
+  address       String?  @db.Text
+  state         String?
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  voucherEntriesDebit  VoucherEntry[] @relation("DebitEntries")
+  voucherEntriesCredit VoucherEntry[] @relation("CreditEntries")
+  invoicesAsCustomer   Invoice[]      @relation("CustomerInvoices")
+  purchaseBillsAsVendor PurchaseBill[] @relation("VendorBills")
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([tenantId, name])
+  @@map("ledgers")
+}
+
+model Voucher {
+  id            String   @id @default(cuid())
+  voucherNumber String
+  voucherType   String   // Journal, Payment, Receipt, Contra, Sales, Purchase
+  date          DateTime
+  narration     String?  @db.Text
+  
+  totalAmount   Decimal  @db.Decimal(15, 2)
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  entries       VoucherEntry[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([tenantId, voucherNumber])
+  @@map("vouchers")
+}
+
+model VoucherEntry {
+  id            String   @id @default(cuid())
+  
+  voucherId     String
+  voucher       Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  
+  debitLedgerId  String?
+  debitLedger    Ledger?  @relation("DebitEntries", fields: [debitLedgerId], references: [id])
+  
+  creditLedgerId String?
+  creditLedger   Ledger?  @relation("CreditEntries", fields: [creditLedgerId], references: [id])
+  
+  amount        Decimal  @db.Decimal(15, 2)
+  
+  createdAt     DateTime @default(now())
+  
+  @@map("voucher_entries")
+}
+
+// ============================================
+// GST INVOICING
+// ============================================
+
+model Invoice {
+  id            String   @id @default(cuid())
+  invoiceNumber String
+  invoiceDate   DateTime
+  
+  customerId    String
+  customer      Ledger   @relation("CustomerInvoices", fields: [customerId], references: [id])
+  
+  placeOfSupply String   // State code
+  supplyType    String   // Intrastate, Interstate
+  
+  subtotal      Decimal  @db.Decimal(15, 2)
+  cgst          Decimal  @default(0) @db.Decimal(15, 2)
+  sgst          Decimal  @default(0) @db.Decimal(15, 2)
+  igst          Decimal  @default(0) @db.Decimal(15, 2)
+  totalAmount   Decimal  @db.Decimal(15, 2)
+  
+  roundOff      Decimal  @default(0) @db.Decimal(10, 2)
+  
+  notes         String?  @db.Text
+  terms         String?  @db.Text
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  items         InvoiceItem[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([tenantId, invoiceNumber])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id            String   @id @default(cuid())
+  
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  description   String
+  hsnCode       String?
+  quantity      Decimal  @db.Decimal(10, 2)
+  unit          String   @default("NOS")
+  rate          Decimal  @db.Decimal(15, 2)
+  amount        Decimal  @db.Decimal(15, 2)
+  
+  gstRate       Decimal  @db.Decimal(5, 2)
+  cgst          Decimal  @default(0) @db.Decimal(15, 2)
+  sgst          Decimal  @default(0) @db.Decimal(15, 2)
+  igst          Decimal  @default(0) @db.Decimal(15, 2)
+  
+  @@map("invoice_items")
+}
+
+model PurchaseBill {
+  id            String   @id @default(cuid())
+  billNumber    String
+  billDate      DateTime
+  
+  vendorId      String
+  vendor        Ledger   @relation("VendorBills", fields: [vendorId], references: [id])
+  
+  vendorGSTIN   String?
+  placeOfSupply String
+  supplyType    String
+  
+  subtotal      Decimal  @db.Decimal(15, 2)
+  cgst          Decimal  @default(0) @db.Decimal(15, 2)
+  sgst          Decimal  @default(0) @db.Decimal(15, 2)
+  igst          Decimal  @default(0) @db.Decimal(15, 2)
+  totalAmount   Decimal  @db.Decimal(15, 2)
+  
+  itcEligible   Boolean  @default(true)
+  itcClaimed    Decimal  @default(0) @db.Decimal(15, 2)
+  
+  // OCR extracted data
+  ocrData       Json?
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  items         PurchaseBillItem[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([tenantId, billNumber, vendorId])
+  @@map("purchase_bills")
+}
+
+model PurchaseBillItem {
+  id            String   @id @default(cuid())
+  
+  billId        String
+  bill          PurchaseBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  
+  description   String
+  hsnCode       String?
+  quantity      Decimal  @db.Decimal(10, 2)
+  unit          String   @default("NOS")
+  rate          Decimal  @db.Decimal(15, 2)
+  amount        Decimal  @db.Decimal(15, 2)
+  
+  gstRate       Decimal  @db.Decimal(5, 2)
+  cgst          Decimal  @default(0) @db.Decimal(15, 2)
+  sgst          Decimal  @default(0) @db.Decimal(15, 2)
+  igst          Decimal  @default(0) @db.Decimal(15, 2)
+  
+  @@map("purchase_bill_items")
+}
+
+// ============================================
+// GST MASTER DATA
+// ============================================
+
+model HSNCode {
+  id            String   @id @default(cuid())
+  code          String
+  description   String
+  gstRate       Decimal  @db.Decimal(5, 2)
+  category      String   // Goods, Services
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([tenantId, code])
+  @@map("hsn_codes")
+}
+
+// ============================================
+// GST RETURNS
+// ============================================
+
+model GSTReturn {
+  id            String   @id @default(cuid())
+  returnType    String   // GSTR1, GSTR3B, GSTR9
+  period        String   // e.g., "Jan-2024", "Q1-2024", "FY2023-24"
+  month         Int?
+  quarter       Int?
+  year          Int
+  
+  status        String   @default("draft") // draft, filed, submitted
+  filedDate     DateTime?
+  
+  // GSTR-1 specific
+  b2bInvoices   Int?
+  b2cInvoices   Int?
+  totalSales    Decimal? @db.Decimal(15, 2)
+  
+  // GSTR-3B specific
+  outwardTaxable Decimal? @db.Decimal(15, 2)
+  inwardTaxable  Decimal? @db.Decimal(15, 2)
+  itcClaimed     Decimal? @db.Decimal(15, 2)
+  taxPayable     Decimal? @db.Decimal(15, 2)
+  
+  jsonData      Json?    // Full return data
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([tenantId, returnType, period])
+  @@map("gst_returns")
+}
