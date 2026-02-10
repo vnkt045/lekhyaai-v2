@@ -1,6 +1,25 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
-    // Redirect to dashboard (will be protected by auth later)
-    redirect("/dashboard");
+    const router = useRouter();
+
+    useEffect(() => {
+        // Check if user is logged in
+        const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+        if (isLoggedIn) {
+            router.push("/dashboard");
+        } else {
+            router.push("/login");
+        }
+    }, [router]);
+
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <p className="text-gray-600">Redirecting...</p>
+        </div>
+    );
 }

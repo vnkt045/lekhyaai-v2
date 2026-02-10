@@ -18,25 +18,16 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function DashboardPage() {
-    // Mock data - will be replaced with real data from API
+    // Real data will come from API
     const stats = {
-        todaySales: 125000,
-        pendingInvoices: 8,
-        itcAvailable: 45000,
-        gstPayable: 32000,
+        todaySales: 0,
+        pendingInvoices: 0,
+        itcAvailable: 0,
+        gstPayable: 0,
     };
 
-    const recentTransactions = [
-        { id: 1, type: "Sales Invoice", number: "INV-001", party: "ABC Traders", amount: 25000, date: new Date() },
-        { id: 2, type: "Payment", number: "PAY-045", party: "XYZ Suppliers", amount: -15000, date: new Date() },
-        { id: 3, type: "Purchase Bill", number: "PUR-123", party: "DEF Industries", amount: -35000, date: new Date() },
-    ];
-
-    const complianceAlerts = [
-        { id: 1, type: "success", message: "GSTR-1 for Jan 2024 filed successfully", date: "2 days ago" },
-        { id: 2, type: "warning", message: "GSTR-3B for Feb 2024 due in 5 days", date: "Today" },
-        { id: 3, type: "pending", message: "Reconcile 3 invoices with GSTR-2B", date: "Today" },
-    ];
+    const recentTransactions: any[] = [];
+    const complianceAlerts: any[] = [];
 
     return (
         <div className="space-y-6">
@@ -135,23 +126,30 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
-                            {recentTransactions.map((txn) => (
-                                <div
-                                    key={txn.id}
-                                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                                >
-                                    <div>
-                                        <p className="font-medium text-sm">{txn.type} - {txn.number}</p>
-                                        <p className="text-xs text-gray-600">{txn.party}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className={`font-semibold ${txn.amount > 0 ? 'text-success-600' : 'text-red-600'}`}>
-                                            {formatCurrency(Math.abs(txn.amount))}
-                                        </p>
-                                        <p className="text-xs text-gray-500">{formatDate(txn.date)}</p>
-                                    </div>
+                            {recentTransactions.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p>No recent transactions</p>
+                                    <p className="text-sm mt-2">Start by creating your first invoice or voucher</p>
                                 </div>
-                            ))}
+                            ) : (
+                                recentTransactions.map((txn) => (
+                                    <div
+                                        key={txn.id}
+                                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                    >
+                                        <div>
+                                            <p className="font-medium text-sm">{txn.type} - {txn.number}</p>
+                                            <p className="text-xs text-gray-600">{txn.party}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className={`font-semibold ${txn.amount > 0 ? 'text-success-600' : 'text-red-600'}`}>
+                                                {formatCurrency(Math.abs(txn.amount))}
+                                            </p>
+                                            <p className="text-xs text-gray-500">{formatDate(txn.date)}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -164,37 +162,44 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
-                            {complianceAlerts.map((alert) => (
-                                <div
-                                    key={alert.id}
-                                    className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
-                                >
-                                    {alert.type === "success" && (
-                                        <CheckCircle2 className="w-5 h-5 text-success-600 mt-0.5" />
-                                    )}
-                                    {alert.type === "warning" && (
-                                        <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
-                                    )}
-                                    {alert.type === "pending" && (
-                                        <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
-                                    )}
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium">{alert.message}</p>
-                                        <p className="text-xs text-gray-500 mt-1">{alert.date}</p>
-                                    </div>
-                                    <Badge
-                                        variant={
-                                            alert.type === "success"
-                                                ? "compliant"
-                                                : alert.type === "warning"
-                                                    ? "warning"
-                                                    : "pending"
-                                        }
-                                    >
-                                        {alert.type}
-                                    </Badge>
+                            {complianceAlerts.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p>No compliance alerts</p>
+                                    <p className="text-sm mt-2">All GST filings are up to date</p>
                                 </div>
-                            ))}
+                            ) : (
+                                complianceAlerts.map((alert) => (
+                                    <div
+                                        key={alert.id}
+                                        className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                                    >
+                                        {alert.type === "success" && (
+                                            <CheckCircle2 className="w-5 h-5 text-success-600 mt-0.5" />
+                                        )}
+                                        {alert.type === "warning" && (
+                                            <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
+                                        )}
+                                        {alert.type === "pending" && (
+                                            <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
+                                        )}
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium">{alert.message}</p>
+                                            <p className="text-xs text-gray-500 mt-1">{alert.date}</p>
+                                        </div>
+                                        <Badge
+                                            variant={
+                                                alert.type === "success"
+                                                    ? "compliant"
+                                                    : alert.type === "warning"
+                                                        ? "warning"
+                                                        : "pending"
+                                            }
+                                        >
+                                            {alert.type}
+                                        </Badge>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </CardContent>
                 </Card>
