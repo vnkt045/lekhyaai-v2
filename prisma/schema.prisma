@@ -20,7 +20,7 @@ model Tenant {
   gstin         String   @unique
   pan           String
   state         String
-  address       String   @db.Text
+  address       String
   email         String
   phone         String
   financialYear String   // e.g., "2024-25"
@@ -39,6 +39,8 @@ model Tenant {
   purchaseBills PurchaseBill[]
   hsnCodes      HSNCode[]
   gstReturns    GSTReturn[]
+  items         Item[]
+  employees     Employee[]
   
   @@map("tenants")
 }
@@ -49,6 +51,9 @@ model User {
   email         String   @unique
   password      String
   role          String   @default("user") // admin, accountant, user
+  permissions   Json?    // Module-based permissions
+  designation   String?
+  language      String   @default("en")    // Preferred language code
   
   tenantId      String
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -57,6 +62,93 @@ model User {
   updatedAt     DateTime @updatedAt
   
   @@map("users")
+}
+
+model Employee {
+  id            String   @id @default(cuid())
+  name          String
+  designation   String
+  department    String?
+  email         String?
+  phone         String?
+  address       String?
+  dateOfJoining DateTime
+  salary        Float?
+  status        String   @default("Active") // Active, Inactive, OnLeave
+  bankDetails   Json?    // { bankName, accountNo, ifsc }
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("employees")
+}
+
+// ============================================
+// EMAIL VERIFICATION
+// ============================================
+
+model EmailVerification {
+  id            String   @id @default(cuid())
+  email         String   // Email to verify
+  code          String   // 6-digit OTP code
+  name          String?  // User's name from registration
+  expiresAt     DateTime // Expiration time (10 minutes)
+  verified      Boolean  @default(false)
+  attempts      Int      @default(0) // Track verification attempts
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([email])
+  @@index([email, verified])
+  @@map("email_verifications")
+}
+
+// ============================================
+// TRANSLATION CACHE
+// ============================================
+
+model Translation {
+  id            String   @id @default(cuid())
+  sourceText    String   // Original English text
+  targetLang    String   // Target language code (hi, ta, te, etc.)
+  translatedText String  // Translated text
+  
+  createdAt     DateTime @default(now())
+  
+  @@unique([sourceText, targetLang])
+  @@index([sourceText, targetLang])
+  @@map("translations")
+}
+
+
+// ============================================
+// INVENTORY / ITEMS
+// ============================================
+
+model Item {
+  id            String   @id @default(cuid())
+  name          String
+  hsnCode       String?  // HSN/SAC code
+  unit          String   @default("NOS")
+  gstRate       Float    @default(18)
+  sellingPrice  Float    @default(0)
+  purchasePrice Float    @default(0)
+  openingStock  Float    @default(0)
+  currentStock  Float    @default(0)
+  description   String?
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([tenantId, name])
+  @@map("items")
 }
 
 // ============================================
@@ -92,13 +184,13 @@ model Ledger {
   groupId       String
   group         Group    @relation(fields: [groupId], references: [id])
   
-  openingBalance Decimal @default(0) @db.Decimal(15, 2)
-  currentBalance Decimal @default(0) @db.Decimal(15, 2)
+  openingBalance Decimal @default(0)
+  currentBalance Decimal @default(0)
   
   // GST specific fields
   gstin         String?
   pan           String?
-  address       String?  @db.Text
+  address       String?
   state         String?
   
   tenantId      String
@@ -122,9 +214,9 @@ model Voucher {
   voucherNumber String
   voucherType   String   // Journal, Payment, Receipt, Contra, Sales, Purchase
   date          DateTime
-  narration     String?  @db.Text
+  narration     String?
   
-  totalAmount   Decimal  @db.Decimal(15, 2)
+  totalAmount   Decimal
   
   tenantId      String
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -150,7 +242,7 @@ model VoucherEntry {
   creditLedgerId String?
   creditLedger   Ledger?  @relation("CreditEntries", fields: [creditLedgerId], references: [id])
   
-  amount        Decimal  @db.Decimal(15, 2)
+  amount        Decimal
   
   createdAt     DateTime @default(now())
   
@@ -172,16 +264,16 @@ model Invoice {
   placeOfSupply String   // State code
   supplyType    String   // Intrastate, Interstate
   
-  subtotal      Decimal  @db.Decimal(15, 2)
-  cgst          Decimal  @default(0) @db.Decimal(15, 2)
-  sgst          Decimal  @default(0) @db.Decimal(15, 2)
-  igst          Decimal  @default(0) @db.Decimal(15, 2)
-  totalAmount   Decimal  @db.Decimal(15, 2)
+  subtotal      Decimal
+  cgst          Decimal  @default(0)
+  sgst          Decimal  @default(0)
+  igst          Decimal  @default(0)
+  totalAmount   Decimal
   
-  roundOff      Decimal  @default(0) @db.Decimal(10, 2)
+  roundOff      Decimal  @default(0)
   
-  notes         String?  @db.Text
-  terms         String?  @db.Text
+  notes         String?
+  terms         String?
   
   tenantId      String
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -203,15 +295,15 @@ model InvoiceItem {
   
   description   String
   hsnCode       String?
-  quantity      Decimal  @db.Decimal(10, 2)
+  quantity      Decimal
   unit          String   @default("NOS")
-  rate          Decimal  @db.Decimal(15, 2)
-  amount        Decimal  @db.Decimal(15, 2)
+  rate          Decimal
+  amount        Decimal
   
-  gstRate       Decimal  @db.Decimal(5, 2)
-  cgst          Decimal  @default(0) @db.Decimal(15, 2)
-  sgst          Decimal  @default(0) @db.Decimal(15, 2)
-  igst          Decimal  @default(0) @db.Decimal(15, 2)
+  gstRate       Decimal
+  cgst          Decimal  @default(0)
+  sgst          Decimal  @default(0)
+  igst          Decimal  @default(0)
   
   @@map("invoice_items")
 }
@@ -228,14 +320,14 @@ model PurchaseBill {
   placeOfSupply String
   supplyType    String
   
-  subtotal      Decimal  @db.Decimal(15, 2)
-  cgst          Decimal  @default(0) @db.Decimal(15, 2)
-  sgst          Decimal  @default(0) @db.Decimal(15, 2)
-  igst          Decimal  @default(0) @db.Decimal(15, 2)
-  totalAmount   Decimal  @db.Decimal(15, 2)
+  subtotal      Decimal
+  cgst          Decimal  @default(0)
+  sgst          Decimal  @default(0)
+  igst          Decimal  @default(0)
+  totalAmount   Decimal
   
   itcEligible   Boolean  @default(true)
-  itcClaimed    Decimal  @default(0) @db.Decimal(15, 2)
+  itcClaimed    Decimal  @default(0)
   
   // OCR extracted data
   ocrData       Json?
@@ -260,15 +352,15 @@ model PurchaseBillItem {
   
   description   String
   hsnCode       String?
-  quantity      Decimal  @db.Decimal(10, 2)
+  quantity      Decimal
   unit          String   @default("NOS")
-  rate          Decimal  @db.Decimal(15, 2)
-  amount        Decimal  @db.Decimal(15, 2)
+  rate          Decimal
+  amount        Decimal
   
-  gstRate       Decimal  @db.Decimal(5, 2)
-  cgst          Decimal  @default(0) @db.Decimal(15, 2)
-  sgst          Decimal  @default(0) @db.Decimal(15, 2)
-  igst          Decimal  @default(0) @db.Decimal(15, 2)
+  gstRate       Decimal
+  cgst          Decimal  @default(0)
+  sgst          Decimal  @default(0)
+  igst          Decimal  @default(0)
   
   @@map("purchase_bill_items")
 }
@@ -278,19 +370,52 @@ model PurchaseBillItem {
 // ============================================
 
 model HSNCode {
-  id            String   @id @default(cuid())
-  code          String
-  description   String
-  gstRate       Decimal  @db.Decimal(5, 2)
-  category      String   // Goods, Services
+  id              String   @id @default(cuid())
+  code            String   // 8-digit code (e.g., "84713000")
+  description     String   // Full description
+  chapter         String   // Chapter number (2 digits)
+  chapterName     String   // Chapter description
+  section         String   // Section (Roman numeral I-XXI)
+  sectionName     String   // Section description
+  heading         String   // 4-digit heading
+  subHeading      String?  // 6-digit subheading
   
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  // GST Details (India-specific)
+  gstRate         Decimal? // GST rate (0, 5, 12, 18, 28)
+  cessRate        Decimal? // Additional cess if applicable
+  igstRate        Decimal? // IGST rate
+  cgstRate        Decimal? // CGST rate
+  sgstRate        Decimal? // SGST rate
   
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  // Additional metadata
+  uom             String?  // Unit of measurement
+  exempted        Boolean  @default(false)
+  reverseCharge   Boolean  @default(false)
+  category        String   @default("Goods") // Goods, Services
   
-  @@unique([tenantId, code])
+  // Hierarchy
+  parentCode      String?  // For building tree structure
+  level           Int      // 2=chapter, 4=heading, 6=subheading, 8=tariff
+  
+  // Multi-language support
+  descriptionHi   String?  // Hindi
+  descriptionTa   String?  // Tamil
+  descriptionTe   String?  // Telugu
+  
+  // Tenant customization
+  tenantId        String?
+  tenant          Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  isGlobal        Boolean  @default(true) // Global vs tenant-specific
+  
+  // Audit
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([code, tenantId])
+  @@index([code])
+  @@index([chapter])
+  @@index([heading])
+  @@index([isGlobal, tenantId])
   @@map("hsn_codes")
 }
 
@@ -312,13 +437,13 @@ model GSTReturn {
   // GSTR-1 specific
   b2bInvoices   Int?
   b2cInvoices   Int?
-  totalSales    Decimal? @db.Decimal(15, 2)
+  totalSales    Decimal?
   
   // GSTR-3B specific
-  outwardTaxable Decimal? @db.Decimal(15, 2)
-  inwardTaxable  Decimal? @db.Decimal(15, 2)
-  itcClaimed     Decimal? @db.Decimal(15, 2)
-  taxPayable     Decimal? @db.Decimal(15, 2)
+  outwardTaxable Decimal?
+  inwardTaxable  Decimal?
+  itcClaimed     Decimal?
+  taxPayable     Decimal?
   
   jsonData      Json?    // Full return data
   

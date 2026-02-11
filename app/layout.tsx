@@ -13,15 +13,18 @@ export const metadata: Metadata = {
     keywords: ["GST", "Accounting", "India", "Invoice", "Compliance", "GSTR"],
 };
 
+// ... imports
+import { Providers } from "./providers";
+
 export default function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <body className={`${inter.variable} font-sans antialiased`}>
-                {children}
+                <Providers>{children}</Providers>
             </body>
         </html>
     );

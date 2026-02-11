@@ -96,23 +96,23 @@ const config: Config = {
                 hindi: ['Noto Sans Devanagari', 'system-ui', 'sans-serif'],
             },
             fontSize: {
-                // POS-optimized sizes
-                'pos-xs': ['0.875rem', { lineHeight: '1.25rem' }],
-                'pos-sm': ['1rem', { lineHeight: '1.5rem' }],
-                'pos-base': ['1.125rem', { lineHeight: '1.75rem' }],
-                'pos-lg': ['1.25rem', { lineHeight: '1.75rem' }],
-                'pos-xl': ['1.5rem', { lineHeight: '2rem' }],
-                'pos-2xl': ['1.875rem', { lineHeight: '2.25rem' }],
+                // Compact POS sizes
+                'pos-xs': ['0.75rem', { lineHeight: '1rem' }],
+                'pos-sm': ['0.875rem', { lineHeight: '1.25rem' }],
+                'pos-base': ['1rem', { lineHeight: '1.5rem' }],
+                'pos-lg': ['1.125rem', { lineHeight: '1.75rem' }],
+                'pos-xl': ['1.25rem', { lineHeight: '1.75rem' }],
+                'pos-2xl': ['1.5rem', { lineHeight: '2rem' }],
             },
             spacing: {
-                // Touch-friendly spacing
-                'touch': '44px',
-                'touch-sm': '36px',
-                'touch-lg': '56px',
+                // More compact spacing
+                'touch': '36px',
+                'touch-sm': '32px',
+                'touch-lg': '44px',
             },
             boxShadow: {
-                'pos': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                'pos-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                'pos': '0 2px 4px -1px rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.06)',
+                'pos-lg': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
             },
         },
     },
