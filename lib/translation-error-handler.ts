@@ -1,13 +1,49 @@
 export class TranslationErrorHandler {
     /**
+     * Decodes HTML entities to proper Unicode characters
+     */
+    static decodeHTMLEntities(text: string): string {
+        if (!text) return "";
+
+        // Decode numeric entities like &#2980; (Tamil characters)
+        text = text.replace(/&#(\d+);/g, (match, dec) => {
+            return String.fromCharCode(dec);
+        });
+
+        // Decode hex entities like &#x0BAE;
+        text = text.replace(/&#x([0-9A-Fa-f]+);/g, (match, hex) => {
+            return String.fromCharCode(parseInt(hex, 16));
+        });
+
+        // Decode common named entities
+        const entities: { [key: string]: string } = {
+            '&amp;': '&',
+            '&lt;': '<',
+            '&gt;': '>',
+            '&quot;': '"',
+            '&apos;': "'",
+            '&nbsp;': ' '
+        };
+
+        text = text.replace(/&[a-z]+;/gi, (match) => {
+            return entities[match.toLowerCase()] || match;
+        });
+
+        return text;
+    }
+
+    /**
      * Removes HTML/XML tags from the translated text.
      * key:value pairs might be preserved if needed, but for now we strip all tags.
      */
     static sanitize(text: string): string {
         if (!text) return "";
+
+        // First decode HTML entities
+        let clean = this.decodeHTMLEntities(text);
+
         // Remove <g id="1">, </g>, <x id="1"/>, etc.
-        // Also remove specific artifacts like `&#39;` if they appear raw (though usually decoded by browser)
-        let clean = text.replace(/<[^>]*>/g, "");
+        clean = clean.replace(/<[^>]*>/g, "");
 
         // Remove multiple spaces
         clean = clean.replace(/\s+/g, " ").trim();

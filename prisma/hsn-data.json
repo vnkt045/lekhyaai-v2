@@ -1,0 +1,112 @@
+[
+    {
+        "code": "84713010",
+        "description": "Personal computer (laptop, palmtop, etc)",
+        "chapter": "84",
+        "chapterName": "Nuclear reactors, boilers, machinery and mechanical appliances; parts thereof",
+        "section": "XVI",
+        "sectionName": "Machinery and mechanical appliances; electrical equipment; parts thereof; sound recorders and reproducers, television image and sound recorders and reproducers, and parts and accessories of such articles",
+        "heading": "8471",
+        "gstRate": 18,
+        "category": "Goods"
+    },
+    {
+        "code": "85171300",
+        "description": "Smartphones",
+        "chapter": "85",
+        "chapterName": "Electrical machinery and equipment and parts thereof; sound recorders and reproducers, television image and sound recorders and reproducers, and parts and accessories of such articles",
+        "section": "XVI",
+        "sectionName": "Machinery and mechanical appliances; electrical equipment; parts thereof; sound recorders and reproducers, television image and sound recorders and reproducers, and parts and accessories of such articles",
+        "heading": "8517",
+        "gstRate": 18,
+        "category": "Goods"
+    },
+    {
+        "code": "998313",
+        "description": "Information technology (IT) consulting and support services",
+        "chapter": "99",
+        "chapterName": "Services",
+        "section": "XXI",
+        "sectionName": "Services",
+        "heading": "9983",
+        "gstRate": 18,
+        "category": "Services"
+    },
+    {
+        "code": "6203",
+        "description": "Men's or boys' suits, ensembles, jackets, blazers, trousers, bib and brace overalls, breeches and shorts (other than swimwear)",
+        "chapter": "62",
+        "chapterName": "Articles of apparel and clothing accessories, not knitted or crocheted",
+        "section": "XI",
+        "sectionName": "Textiles and textile articles",
+        "heading": "6203",
+        "gstRate": 12,
+        "category": "Goods"
+    },
+    {
+        "code": "1905",
+        "description": "Bread, pastry, cakes, biscuits and other bakers' wares, whether or not containing cocoa; communion wafers, empty cachets of a kind suitable for pharmaceutical use, sealing wafers, rice paper and similar products",
+        "chapter": "19",
+        "chapterName": "Preparations of cereals, flour, starch or milk; pastrycooks' products",
+        "section": "IV",
+        "sectionName": "Prepared foodstuffs; beverages, spirits and vinegar; tobacco and manufactured tobacco substitutes",
+        "heading": "1905",
+        "gstRate": 5,
+        "category": "Goods"
+    },
+    {
+        "code": "3004",
+        "description": "Medicaments (excluding goods of heading 3002, 3005 or 3006) consisting of mixed or unmixed products for therapeutic or prophylactic uses, put up in measured doses (including those in the form of transdermal administration systems) or in forms or packings for retail sale",
+        "chapter": "30",
+        "chapterName": "Pharmaceutical products",
+        "section": "VI",
+        "sectionName": "Products of the chemical or allied industries",
+        "heading": "3004",
+        "gstRate": 12,
+        "category": "Goods"
+    },
+    {
+        "code": "9954",
+        "description": "Construction services",
+        "chapter": "99",
+        "chapterName": "Services",
+        "section": "XXI",
+        "sectionName": "Services",
+        "heading": "9954",
+        "gstRate": 18,
+        "category": "Services"
+    },
+    {
+        "code": "9963",
+        "description": "Accommodation, food and beverage services",
+        "chapter": "99",
+        "chapterName": "Services",
+        "section": "XXI",
+        "sectionName": "Services",
+        "heading": "9963",
+        "gstRate": 5,
+        "category": "Services"
+    },
+    {
+        "code": "9996",
+        "description": "Recreational, cultural and sporting services",
+        "chapter": "99",
+        "chapterName": "Services",
+        "section": "XXI",
+        "sectionName": "Services",
+        "heading": "9996",
+        "gstRate": 18,
+        "category": "Services"
+    },
+    {
+        "code": "7214",
+        "description": "Other bars and rods of iron or non-alloy steel, not further worked than forged, hot-rolled, hot-drawn or hot-extruded, but including those twisted after rolling (TMT Bars)",
+        "chapter": "72",
+        "chapterName": "Iron and steel",
+        "section": "XV",
+        "sectionName": "Base metals and articles of base metal",
+        "heading": "7214",
+        "gstRate": 18,
+        "category": "Goods"
+    }
+]

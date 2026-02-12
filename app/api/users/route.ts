@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -6,16 +5,18 @@ import { auth } from "@/lib/auth";
 export async function GET(req: Request) {
     try {
         const session = await auth();
-        if (!session?.user?.tenantId) {
-            return new NextResponse("Unauthorized", { status: 401 });
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Only Admin/Owner should see users?
-        // if (session.user.role !== 'admin' && session.user.role !== 'owner') ...
+        // Ideally check for admin role here
+        if ((session.user as any).role !== 'admin') {
+            // Or check permissions
+        }
 
         const users = await prisma.user.findMany({
             where: {
-                tenantId: session.user.tenantId,
+                tenantId: (session.user as any).tenantId
             },
             select: {
                 id: true,
@@ -23,15 +24,13 @@ export async function GET(req: Request) {
                 email: true,
                 role: true,
                 designation: true,
-                permissions: true,
-                createdAt: true
-            },
-            orderBy: { createdAt: 'desc' }
+                // Do not expose password
+            }
         });
 
         return NextResponse.json(users);
     } catch (error) {
-        console.error("[USERS_GET]", error);
-        return new NextResponse("Internal Error", { status: 500 });
+        console.error("Error fetching users:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

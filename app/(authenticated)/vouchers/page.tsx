@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { T } from "@/components/ui/translate";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 
 export default function VouchersPage() {
     const vouchers: any[] = [];
@@ -30,6 +31,13 @@ export default function VouchersPage() {
                         <T>New Voucher</T>
                     </Button>
                 </Link>
+            </div>
+
+            {/* Filters */}
+            <div className="flex justify-end">
+                <div className="flex items-center gap-2">
+                    <DateRangeFilter />
+                </div>
             </div>
 
             {/* Voucher Type Quick Access */}

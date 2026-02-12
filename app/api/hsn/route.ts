@@ -1,48 +1,39 @@
-
-import { auth } from "@/lib/auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { searchHSN } from "@/lib/hsn-data";
+import { auth } from "@/lib/auth";
 
 export async function GET(req: Request) {
-    const session = await auth();
-    if (!session || !session.user || !session.user.id) {
-        return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const query = searchParams.get("q");
-
-    if (!query || query.length < 2) {
-        return Response.json([]);
-    }
-
     try {
-        // 1. Search Global Data
-        const globalResults = searchHSN(query);
+        const session = await auth();
+        // Allow unauthenticated access? Probably not for production, but maybe for public facing?
+        // Let's require auth for now as per app standard.
+        if (!session?.user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-        // 2. Search Tenant Data
-        const tenantResults = await prisma.hSNCode.findMany({
+        const { searchParams } = new URL(req.url);
+        const query = searchParams.get("q");
+
+        if (!query || query.length < 2) {
+            return NextResponse.json([]);
+        }
+
+        const hsnCodes = await prisma.hSNCode.findMany({
             where: {
-                tenantId: session.user.tenantId,
                 OR: [
-                    { code: { contains: query } },
-                    { description: { contains: query } }
+                    { code: { startsWith: query } },
+                    { description: { contains: query } } // Case insensitive in SQLite/Postgres usually or depends on collation
                 ]
             },
-            take: 10
+            take: 20,
+            orderBy: {
+                code: 'asc'
+            }
         });
 
-        // 3. Merge Results (Tenant overrides Global if same code)
-        const resultMap = new Map<string, any>();
-
-        globalResults.forEach(item => resultMap.set(item.code, { ...item, type: "global" }));
-        tenantResults.forEach(item => resultMap.set(item.code, { ...item, gstRate: Number(item.gstRate), type: "tenant" }));
-
-        const results = Array.from(resultMap.values());
-
-        return Response.json(results);
+        return NextResponse.json(hsnCodes);
     } catch (error) {
-        console.error("HSN Search Error:", error);
-        return Response.json({ error: "Failed to search HSN" }, { status: 500 });
+        console.error("HSN Search error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

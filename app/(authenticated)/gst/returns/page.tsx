@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { T } from "@/components/ui/translate";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 
 export default function GSTReturnsPage() {
     const [data, setData] = useState<any>(null);
@@ -62,6 +63,10 @@ export default function GSTReturnsPage() {
             <div>
                 <h1 className="text-3xl font-bold text-gray-900"><T>GST Returns</T></h1>
                 <p className="text-gray-600 mt-1"><T>File and manage your GST returns</T></p>
+            </div>
+
+            <div className="flex justify-end">
+                <DateRangeFilter />
             </div>
 
             {/* Quick Actions - NOW WITH href! */}

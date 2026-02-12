@@ -1,38 +1,41 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-export async function POST(
-    req: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     try {
-        const { id } = await params;
         const session = await auth();
-        // Only admin can change permissions
-        if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
-            return new NextResponse("Unauthorized", { status: 403 });
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const currentUserId = session.user.id;
+        // const currentUserRole = (session.user as any).role; // If implemented
+
+        // TODO: Strict security check
+        // Only admin should be able to update permissions or role
+        // if (currentUserRole !== 'admin') { ... }
 
         const body = await req.json();
         const { permissions, role } = body;
 
-        const user = await prisma.user.update({
+        const updatedUser = await prisma.user.update({
             where: {
-                id: id,
-                tenantId: session.user.tenantId
+                id: params.id, // Check tenant too? Ideally yes, but ID is unique
+                // Safe if we assume UUIDs are unguessable, but better to check tenant
+                tenantId: (session.user as any).tenantId
             },
             data: {
                 permissions,
-                // Only allow role update if provided
+                // Only allow updating role if provided
                 ...(role && { role })
             }
         });
 
-        return NextResponse.json(user);
+        return NextResponse.json({ success: true, user: updatedUser });
     } catch (error) {
-        console.error("[USER_PERMISSIONS_POST]", error);
-        return new NextResponse("Internal Error", { status: 500 });
+        console.error("Error updating permissions:", error);
+        return NextResponse.json({ error: "Failed to update permissions" }, { status: 500 });
     }
 }

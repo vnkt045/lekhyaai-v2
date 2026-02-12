@@ -72,6 +72,7 @@ export async function POST(req: Request) {
                 dateOfJoining: new Date(dateOfJoining),
                 salary: salary ? parseFloat(salary) : null,
                 bankDetails: bankDetails || {}, // Json
+                salaryStructure: body.salaryStructure || {}, // Json
                 tenantId: session.user.tenantId,
                 status: "Active"
             }

@@ -19,8 +19,22 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Tenant not found" }, { status: 400 });
         }
 
+        const { searchParams } = new URL(req.url);
+        const from = searchParams.get("from");
+        const to = searchParams.get("to");
+
+        const where: any = {
+            tenantId: user.tenantId
+        };
+
+        if (from || to) {
+            where.invoiceDate = {};
+            if (from) where.invoiceDate.gte = new Date(from);
+            if (to) where.invoiceDate.lte = new Date(to);
+        }
+
         const invoices = await prisma.invoice.findMany({
-            where: { tenantId: user.tenantId },
+            where,
             include: { customer: true, items: true },
             orderBy: { invoiceDate: 'desc' }
         });

@@ -37,7 +37,11 @@ GST_API_KEY=your_api_key
 1. Go to Vercel Dashboard → Storage → Create Database
 2. Select "Postgres"
 3. Vercel will automatically set `DATABASE_URL`
-4. Run migrations: `npx prisma migrate deploy`
+3. Vercel will automatically set `DATABASE_URL`
+4. **IMPORTANT**: We have automating the switching to PostgreSQL. The build command `npm run vercel-build` will:
+   - Swap `schema.prisma` with `schema.postgres.prisma`
+   - Run `prisma db push` to sync the schema (bypassing SQLite migration history)
+   - Build the Next.js app
 
 ### Option 2: Supabase
 1. Create project at https://supabase.com
@@ -66,7 +70,7 @@ GST_API_KEY=your_api_key
 3. **Verify Deployment**
    - Check build logs for errors
    - Test login at https://your-app.vercel.app/login
-   - Default credentials: admin@lekhya.ai / password123
+   - Default credentials: admin@admin.com / test123
 
 ## Common Deployment Errors & Fixes
 

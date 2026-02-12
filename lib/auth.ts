@@ -38,6 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.id = user.id;
                 token.tenantId = (user as any).tenantId;
                 token.role = (user as any).role;
+                token.permissions = (user as any).permissions; // Include permissions
 
                 // Fetch tenant data to include in session
                 const tenant = await prisma.tenant.findUnique({
@@ -59,6 +60,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 session.user.id = token.id as string;
                 (session.user as any).tenantId = token.tenantId as string;
                 (session.user as any).role = token.role as string;
+                (session.user as any).permissions = token.permissions; // Include permissions
                 (session.user as any).tenant = token.tenant;
             }
             return session;

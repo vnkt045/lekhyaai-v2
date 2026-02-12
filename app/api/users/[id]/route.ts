@@ -1,40 +1,39 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-export async function GET(
-    req: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     try {
-        const { id } = await params;
         const session = await auth();
-        if (!session?.user?.tenantId) {
-            return new NextResponse("Unauthorized", { status: 401 });
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const userId = params.id;
 
         const user = await prisma.user.findUnique({
             where: {
-                id: id,
-                tenantId: session.user.tenantId // Ensure tenant isolation
+                id: userId,
+                tenantId: (session.user as any).tenantId
             },
             select: {
                 id: true,
                 name: true,
                 email: true,
                 role: true,
+                designation: true,
                 permissions: true
             }
         });
 
         if (!user) {
-            return new NextResponse("User not found", { status: 404 });
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
         return NextResponse.json(user);
     } catch (error) {
-        console.error("[USER_GET]", error);
-        return new NextResponse("Internal Error", { status: 500 });
+        console.error("Error fetching user details:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

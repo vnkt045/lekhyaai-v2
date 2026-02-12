@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { GSTAPIService } from "@/lib/gst-api";
 
 // GSTIN lookup - first checks local DB, then external API
 export async function GET(req: Request) {
@@ -71,12 +72,40 @@ export async function GET(req: Request) {
             });
         }
 
-        // Step 2: Derive details from GSTIN structure
         // GSTIN Format: 2-digit state + 10-digit PAN + 1-digit entity + 1-digit Z + 1-digit check
         const stateCode = gstin.substring(0, 2);
         const pan = gstin.substring(2, 12);
         const stateName = stateMap[stateCode] || "Unknown";
 
+        // Step 2: Use GSTAPIService for verification
+        // This will try the external API (if configured) or return structured mock data in dev
+        let externalData = null;
+        try {
+            externalData = await GSTAPIService.verifyGSTIN(gstin);
+        } catch (error) {
+            console.error("GST API Service error:", error);
+            // Fallback to derived logic if service fails completely
+        }
+
+        if (externalData) {
+            return NextResponse.json({
+                source: "api",
+                gstin: externalData.gstin,
+                legalName: externalData.legalName,
+                tradeName: externalData.tradeName,
+                address: externalData.address,
+                state: externalData.state,
+                // We might need to map state name to state code if API returns name
+                // For now assuming API returns valid state name matching our map or we use the derived one
+                stateCode: stateCode,
+                pan: pan,
+                entityType: externalData.taxpayerType, // Map to our entity types if needed
+                existsInDB: false,
+                status: externalData.status
+            });
+        }
+
+        // Fallback: Derive details from GSTIN structure if API fails
         // PAN 4th character tells entity type
         const entityTypeMap: Record<string, string> = {
             "C": "Company", "P": "Individual", "H": "HUF",
@@ -86,26 +115,12 @@ export async function GET(req: Request) {
         };
         const entityType = entityTypeMap[pan.charAt(3)] || "Business";
 
-        // Step 3: Try external API (GST Search Portal - free)
-        let externalData = null;
-        try {
-            const apiResponse = await fetch(
-                `https://sheet.best/api/sheets/gstin-search?gstin=${gstin}`,
-                { signal: AbortSignal.timeout(3000) }
-            );
-            if (apiResponse.ok) {
-                externalData = await apiResponse.json();
-            }
-        } catch {
-            // External API failed, use derived data
-        }
-
         return NextResponse.json({
             source: "derived",
             gstin: gstin,
-            legalName: externalData?.legalName || "",
-            tradeName: externalData?.tradeName || "",
-            address: externalData?.address || "",
+            legalName: "", // Can't derive name
+            tradeName: "",
+            address: "",
             state: stateName,
             stateCode: stateCode,
             pan: pan,

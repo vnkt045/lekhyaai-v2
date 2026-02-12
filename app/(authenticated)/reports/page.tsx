@@ -5,6 +5,7 @@ import { TrendingUp, FileText, BarChart3, PieChart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { TileButton } from "@/components/ui/tile-button";
 import { T } from "@/components/ui/translate";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 
 export default function ReportsPage() {
     return (
@@ -13,6 +14,10 @@ export default function ReportsPage() {
             <div>
                 <h1 className="text-3xl font-bold text-gray-900"><T>Reports</T></h1>
                 <p className="text-gray-600 mt-1"><T>View business insights and analytics</T></p>
+            </div>
+
+            <div className="flex justify-end">
+                <DateRangeFilter />
             </div>
 
             {/* Report Categories */}
